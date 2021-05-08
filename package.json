@@ -1,0 +1,22 @@
+{
+  "name": "gbre",
+  "version": "0.0.1",
+  "description": "GB Runtime Environment for iOS",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pome-ta/GBRE.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pome-ta/GBRE/issues"
+  },
+  "homepage": "https://github.com/pome-ta/GBRE#readme",
+  "dependencies": {
+    "express": "4.17.1"
+  }
+}
