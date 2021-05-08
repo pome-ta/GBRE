@@ -10,6 +10,6 @@ app.use(express.static(__dirname + '/src'));
 
 // Launch app
 app.listen(port, () => {
-  console.log(`Launching app... http://localhost:${port}` + '\n');
-  //console.log({app});
+    console.log(`Launching app... http://localhost:${port}` + '\n');
+    //console.log({app});
 });

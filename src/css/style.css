@@ -1,0 +1,53 @@
+* {
+    font-family: Trebuchet MS;
+    font-size: 24;
+}
+
+body {
+    background: black;
+    margin: 0;
+    width: 1024;
+}
+
+.ffff {
+    width: 1024;
+    height: 666;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+iframe {
+    border: 0;
+}
+
+.d {
+    position: relative;
+    width: 1024;
+    height: 1024;
+}
+
+.d canvas {
+    position: absolute;
+    background: white;
+}
+
+textarea {
+    background: silver;
+    width: 100%;
+    height: 122;
+}
+
+textarea:last-of-type {
+    width: 100%;
+    height: 77777;
+}
+
+.svsv,
+textarea {
+    display: none;
+}
+
+textarea:first-of-type,
+textarea:last-of-type {
+    display: inline-block;
+}
