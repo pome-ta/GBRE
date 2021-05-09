@@ -176,9 +176,9 @@
 </style>
 <script>
     o = {};
-    o.ff = new Array(1 << 11);
+    o.ff = new Array(1 << 11);  /* (1 << 11) -> 2048 */
     o.ff[888] = o;
-    o.m = new Uint8Array(1 << 20 | 1 << 23);
+    o.m = new Uint8Array(1 << 20 | 1 << 23);    /* (1048576 | 8388608) -> 9437184 */
     o.m.mm = o.m.subarray(0, 1 << 16);
     o.r = new Int32Array(o.m.buffer, 1 << 16 | 1 << 12, 1 << 10);
     o.h = new Array(1 << 8);
