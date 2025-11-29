@@ -33,6 +33,10 @@
 
 `docs/index.html` をWebブラウザで開くことでアプリケーションを実行します。
 
+### 実行環境
+- デスクトップ: Chrome, Safari
+- モバイル: iPhone (Mobile Safari)
+
 ## 5. 現在の状況と次のステップ
 
 ### 現在の状況
