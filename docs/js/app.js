@@ -1,28 +1,45 @@
-o = {};
-o.ff = new Array(1 << 11);
-o.ff[888] = o;
-o.m = new Uint8Array((1 << 20) | (1 << 23));
-o.m.mm = o.m.subarray(0, 1 << 16);
-o.r = new Int32Array(o.m.buffer, (1 << 16) | (1 << 12), 1 << 10);
-o.h = new Array(1 << 8);
-for (var i = 0; i < 1 << 8; ++i) {
-  o.h[i] = (i | (1 << 8))
-    .toString(1 << 4)
-    .substr(1)
-    .toUpperCase();
+// --- Emulator Core Objects ---
+const o = {}; // Global emulator object
+
+// --- Constants for Memory and Array Sizes ---
+const FUNCTION_ARRAY_SIZE = 1 << 11; // 2048
+const MEMORY_VIEW_SIZE = 1 << 16; // 65536 (64KB)
+const TOTAL_MEMORY_SIZE = (1 << 20) | (1 << 23); // Main memory + Cartridge RAM etc.
+const REGISTER_BUFFER_OFFSET = MEMORY_VIEW_SIZE | (1 << 12);
+const REGISTER_ARRAY_SIZE = 1 << 10; // 1024
+const HEX_TABLE_SIZE = 1 << 8; // 256
+const BINARY_TABLE_SIZE = 1 << 8; // 256
+
+// --- Function Table (CPU instructions, event handlers) ---
+o.ff = new Array(FUNCTION_ARRAY_SIZE);
+o.ff[888] = o; // Self-reference for debugging?
+
+// --- Memory (RAM, VRAM, Cartridge ROM/RAM) ---
+o.m = new Uint8Array(TOTAL_MEMORY_SIZE); // Main memory buffer
+o.m.mm = o.m.subarray(0, MEMORY_VIEW_SIZE); // 64KB memory view (for direct access)
+
+// --- CPU Registers ---
+o.r = new Int32Array(o.m.buffer, REGISTER_BUFFER_OFFSET, REGISTER_ARRAY_SIZE);
+
+// --- Hex/Binary Conversion Helpers ---
+o.h = new Array(HEX_TABLE_SIZE); // Lookup table for byte to 2-digit hex string
+for (var i = 0; i < HEX_TABLE_SIZE; ++i) {
+  o.h[i] = (i | HEX_TABLE_SIZE).toString(16).substr(1).toUpperCase();
 }
+
+// Converts a 16-bit number to a 4-digit hex string
 o.hh = function (n) {
-  var h = o.h;
-  return h[(n >> 8) & ((1 << 8) - 1)] + h[n & ((1 << 8) - 1)];
+  return o.h[(n >> 8) & 0xff] + o.h[n & 0xff];
 };
-o.b = new Array(1 << 8);
-for (var i = 0; i < 1 << 8; ++i) {
-  o.b[i] = (i | (1 << 8)).toString(1 << 1).substr(1);
+
+o.b = new Array(BINARY_TABLE_SIZE); // Lookup table for byte to 8-digit binary string
+for (var i = 0; i < BINARY_TABLE_SIZE; ++i) {
+  o.b[i] = (i | BINARY_TABLE_SIZE).toString(2).substr(1);
 }
+
 o.ffrr = function (oo, r, m, ff) {
   var h = oo.h;
   var hh = oo.hh;
-  var b = oo.b;
   var rr = oo.rr;
   if (!rr) {
     oo.rr = rr =
@@ -30,6 +47,7 @@ o.ffrr = function (oo, r, m, ff) {
         /(_)/
       );
   }
+  var b = oo.b;
   var i = 0;
   rr[(i = 1)] = hh(r[9]);
   rr[(i += 2)] = hh(r[6]);
@@ -118,7 +136,7 @@ o.ff[999] = function (e) {
     return;
   }
   if (!r[148]) {
-    o.fftt('Starting GBRE...');
+    oo.fftt('Starting GBRE...');
   }
   if (!oo.v) {
     ff[1101](oo, r, m, ff);
@@ -126,7 +144,7 @@ o.ff[999] = function (e) {
   if (!oo.s) {
     ff[1200](oo, r, m, ff);
   }
-  o.ff[1000]();
+  oo.ff[1000]();
 };
 o.ff[1999] = function (e) {
   e.preventDefault();
