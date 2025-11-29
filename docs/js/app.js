@@ -1,4 +1,4 @@
-// --- Emulator Core Objects ---
+// --- エミュレータのコアオブジェクト定義 ---
 const o = {}; // Global emulator object
 
 // --- Constants for Memory and Array Sizes ---
@@ -10,24 +10,24 @@ const REGISTER_ARRAY_SIZE = 1 << 10; // 1024
 const HEX_TABLE_SIZE = 1 << 8; // 256
 const BINARY_TABLE_SIZE = 1 << 8; // 256
 
-// --- Function Table (CPU instructions, event handlers) ---
+// --- 関数テーブル (CPU命令、イベントハンドラなど) ---
 o.ff = new Array(FUNCTION_ARRAY_SIZE);
 o.ff[888] = o; // Self-reference for debugging?
 
-// --- Memory (RAM, VRAM, Cartridge ROM/RAM) ---
+// --- メモリ (RAM, VRAM, カートリッジROM/RAMなど) ---
 o.m = new Uint8Array(TOTAL_MEMORY_SIZE); // Main memory buffer
 o.m.mm = o.m.subarray(0, MEMORY_VIEW_SIZE); // 64KB memory view (for direct access)
 
-// --- CPU Registers ---
+// --- CPUレジスタ ---
 o.r = new Int32Array(o.m.buffer, REGISTER_BUFFER_OFFSET, REGISTER_ARRAY_SIZE);
 
-// --- Hex/Binary Conversion Helpers ---
+// --- 16進数/2進数変換ヘルパー ---
 o.h = new Array(HEX_TABLE_SIZE); // Lookup table for byte to 2-digit hex string
 for (var i = 0; i < HEX_TABLE_SIZE; ++i) {
   o.h[i] = (i | HEX_TABLE_SIZE).toString(16).substr(1).toUpperCase();
 }
 
-// Converts a 16-bit number to a 4-digit hex string
+// 16ビット数値を4桁の16進数文字列に変換する
 o.hh = function (n) {
   return o.h[(n >> 8) & 0xff] + o.h[n & 0xff];
 };
@@ -37,6 +37,7 @@ for (var i = 0; i < BINARY_TABLE_SIZE; ++i) {
   o.b[i] = (i | BINARY_TABLE_SIZE).toString(2).substr(1);
 }
 
+// デバッグ用にレジスタ状態を整形して文字列として返す
 o.ffrr = function (oo, r, m, ff) {
   var h = oo.h;
   var hh = oo.hh;
@@ -78,6 +79,7 @@ o.ffrr = function (oo, r, m, ff) {
   rr[(i += 2)] = r[15];
   return rr.join('');
 };
+// デバッグ用に指定されたアドレス範囲のメモリ内容を16進数ダンプ形式の文字列として返す
 o.ffmm = function (n, nn) {
   var hh = o.hh;
   var m = o.m;
@@ -96,6 +98,7 @@ o.ffmm = function (n, nn) {
   }
   return a.join('\n');
 };
+// 指定されたテキストエリアに文字列を表示する
 o.fftt = function (s, n) {
   n |= 0;
   var tt = o.tt;
@@ -104,10 +107,12 @@ o.fftt = function (s, n) {
   }
   tt[n].value = s;
 };
+// デバッグ表示用の文字列を一時的に保持する
 o.ff[811] = function (s, i) {
   i |= 0;
   o.ff[1977 + i] = s;
 };
+// o.ff[811]で保持された文字列をテキストエリアに表示し、保持内容をクリアする
 o.ff[812] = function () {
   var tt = o.tt;
   if (!tt) {
@@ -126,6 +131,7 @@ o.ff[812] = function () {
     }
   }
 };
+// エミュレータのメイン処理を開始するトリガー (画面クリック/タッチで発火)
 o.ff[999] = function (e) {
   var oo = o;
   var r = oo.r;
@@ -133,23 +139,30 @@ o.ff[999] = function (e) {
   var ff = oo.ff;
   var h = oo.h;
   if (r[19] > 1 && oo.v) {
+    // 既にメインループが高速で動作している場合は何もしない
     return;
   }
   if (!r[148]) {
+    // カートリッジタイプが未定の場合、開始メッセージを表示
     oo.fftt('Starting GBRE...');
   }
   if (!oo.v) {
+    // 描画関連の初期化がまだなら実行
     ff[1101](oo, r, m, ff);
   }
   if (!oo.s) {
+    // 音声関連の初期化がまだなら実行
     ff[1200](oo, r, m, ff);
   }
+  // メインループを開始
   oo.ff[1000]();
 };
+// UIボタンクリック/タッチの共通ハンドラ
 o.ff[1999] = function (e) {
   e.preventDefault();
   o.ff[2000 + (e.target.i | 0)]();
 };
+// [Reset]ボタンの処理
 o.ff[2000] = function () {
   if (!confirm('Reset?')) {
     return;
@@ -181,6 +194,7 @@ o.ff[2000] = function () {
     1 << 8
   );
 };
+// [Open URL]ボタンの処理
 o.ff[2001] = function () {
   var u =
     window.localStorage && localStorage.getItem
@@ -245,6 +259,7 @@ o.ff[2009] = function () {
     sss.innerHTML = m[1];
   }
 };
+// [2P]ボタンの処理 (2プレイヤー通信モード？)
 o.ff[2010] = function () {
   if (o.ll || document.querySelector('.ffff')) {
     return;
@@ -259,47 +274,62 @@ o.ff[2010] = function () {
   d.appendChild(f);
   document.body.insertBefore(d, document.body.firstChild);
 };
+// [Clear]ボタンの処理 (デバッグ用テキストエリアをクリア)
 o.ff[2011] = function () {
   o.fftt('', 10);
 };
+// [Debug]ボタンの処理 (デバッグ表示のON/OFF)
 o.ff[2012] = function () {
   o.r[33] = o.r[33] ? 0 : ~0;
 };
+// [ROM Dump]ボタンの処理
 o.ff[2013] = function () {
   o.ff[811](o.ffmm(0 | (1 << 20), 0x7fff | (1 << 20)), 10);
 };
+// [RAM Dump]ボタンの処理
 o.ff[2014] = function () {
   o.ff[811](o.ffmm(0xa000, 0xdfff), 10);
 };
+// [VRAM]ボタンの処理
 o.ff[2015] = function () {
   o.ff[811](o.ffmm(0x8000, 0x97ff), 10);
 };
+// [BG Code]ボタンの処理
 o.ff[2016] = function () {
   o.ff[811](o.ffmm(0x9800, 0x9fff), 10);
 };
+// [OAM]ボタンの処理
 o.ff[2017] = function () {
   o.ff[811](o.ffmm(0xfe00, 0xfe9f), 10);
 };
+// [FFxx]ボタンの処理 (I/Oレジスタダンプ)
 o.ff[2018] = function () {
   o.ff[811](o.ffmm(0xff00, 0xffff), 10);
 };
+// CPU命令テーブルの初期化 (0x00-0x1FF)
+// まずは全ての命令を「何もしない、1サイクル消費」で埋める
 var ff = function (n, r, m, ff) {
   return 1;
 };
 for (var i = 0; i < 1 << 9; ++i) {
   o.ff[i] = ff;
 }
+// I/Oレジスタ書き込みハンドラテーブルの初期化 (0x200-0x2FF)
+// まずは全てのハンドラを「何もしない、-1を返す」で埋める
 var ff = function (p, r, m, ff, n) {
   return -1;
 };
 for (var i = 0; i < 1 << 8; ++i) {
   o.ff[i | (1 << 9)] = ff;
 }
+// メモリ読み込みのコア関数 (Memory Bus)
 o.ff[800] = function (p, r, m, ff) {
   if (p < 0x4000) {
+    // 0x0000-0x3FFF: ROMバンク0
     return m[p];
   }
   if (0x4000 <= p && p < 0x8000) {
+    // 0x4000-0x7FFF: ROMバンク1-NN (MBC依存)
     var pp = r[10];
     if (pp > 1) {
       --pp;
@@ -309,9 +339,11 @@ o.ff[800] = function (p, r, m, ff) {
     return m[p];
   }
   if (0xff00 <= p && p <= 0xffff) {
+    // 0xFF00-0xFFFF: I/Oレジスタ, HRAM, IEレジスタ
     return m[p];
   }
   if (0x8000 <= p && p < 0xa000) {
+    // 0x8000-0x9FFF: VRAM
     if ((pp = r[77])) {
       p &= (1 << 13) - 1;
       p |= pp;
@@ -319,9 +351,11 @@ o.ff[800] = function (p, r, m, ff) {
     return m[p];
   }
   if (0xe000 <= p && p < 0xfe00) {
+    // 0xE000-0xFDFF: Echo RAM (C000-DE00のミラー)
     p -= 1 << 13;
   }
   if (r[147] & (1 << 7) && 0xa000 <= p && p < 0xc000) {
+    // MBC7の加速度センサー読み込み
     return ff[1176](p, r, m, ff);
   }
   if (
@@ -330,7 +364,9 @@ o.ff[800] = function (p, r, m, ff) {
     (pp = r[11]) &&
     (r[12] || r[147] & ((1 << 5) | (1 << 3)))
   ) {
+    // 0xA000-0xBFFF: カートリッジRAM (MBC依存)
     if (r[147] & (1 << 4) && 0x08 <= pp && pp <= 0x0c) {
+      // RTC(リアルタイムクロック)レジスタの読み込み
       p = 0;
       if (pp === 0x08) {
         m[(1 << 17) | (pp << 13)] = new Date().getSeconds();
@@ -353,16 +389,20 @@ o.ff[800] = function (p, r, m, ff) {
     p |= (1 << 17) | (pp << 13);
   }
   if ((pp = r[76]) && 0xd000 <= p && p < 0xe000) {
+    // WRAMバンク切り替え (CGBモード)
     p &= (1 << 12) - 1;
     p |= pp;
   }
   return m[p];
 };
+// メモリ書き込みのコア関数 (Memory Bus)
 o.ff[801] = function (p, r, m, ff, n) {
   if (0x8000 <= p && p < 0xa000) {
+    // 0x8000-0x9FFF: VRAMへの書き込み
     var iii = r[77];
     var pp = p & ((1 << 13) - 1);
     if (p < 0x9800) {
+      // VRAMのタイルデータが変更されたことをマークする
       var ii = pp >> 4;
       if (iii) {
         ii += 3 << 7;
@@ -376,6 +416,7 @@ o.ff[801] = function (p, r, m, ff, n) {
     return;
   }
   if (0xff00 <= p && p <= 0xffff) {
+    // 0xFF00-0xFFFF: I/Oレジスタへの書き込み
     var mm = m[0xff41] & ((1 << 2) - 1);
     if (mm === 3) {
       var y = m[0xff44];
@@ -386,10 +427,12 @@ o.ff[801] = function (p, r, m, ff, n) {
     return;
   }
   if (p < 0x8000) {
+    // 0x0000-0x7FFF: MBC(メモリバンクコントローラ)レジスタへの書き込み
     if (!r[148]) {
       ff[833](r, m, ff);
     }
     if (p >= 0x6000) {
+      // 0x6000-0x7FFF: MBC2 RAM有効化 / MBC1 RAM/ROMモード切替
       if (r[147] & (1 << 1)) {
         if ((r[12] = n & 1)) {
           r[10] &= (1 << 5) - 1;
@@ -401,6 +444,7 @@ o.ff[801] = function (p, r, m, ff, n) {
         }
       }
     } else if (p >= 0x4000) {
+      // 0x4000-0x5FFF: MBC1/MBC3/MBC5 RAMバンク番号 / ROMバンク番号上位ビット
       r[11] = n & ((1 << 4) - 1);
       if (r[147] & (1 << 1)) {
         if (r[12] & 1) {
@@ -412,12 +456,14 @@ o.ff[801] = function (p, r, m, ff, n) {
         }
       }
     } else if (r[147] & (1 << 5) && p >= 0x3000) {
+      // MBC5 ROMバンク番号上位ビット
       var pp = r[10];
       pp &= ~(1 << 8);
       pp |= (n & 1) << 8;
       pp &= r[148] - 1;
       r[10] = pp;
     } else if (p >= 0x2000) {
+      // 0x2000-0x3FFF: MBC1/MBC3/MBC5 ROMバンク番号下位ビット
       var nn = r[147];
       var pp =
         nn & (1 << 1)
@@ -441,11 +487,13 @@ o.ff[801] = function (p, r, m, ff, n) {
       pp &= r[148] - 1;
       r[10] = pp;
     } else {
+      // 0x0000-0x1FFF: RAM有効化
       r[13] = n;
     }
     return;
   }
   if (0xe000 <= p && p < 0xfe00) {
+    // 0xE000-0xFDFF: Echo RAMへの書き込みは、本体(C000-DDFF)に書き込む
     p -= 1 << 13;
   }
   if (r[147] & (1 << 7) && 0xa000 <= p && p < 0xc000) {
@@ -460,6 +508,7 @@ o.ff[801] = function (p, r, m, ff, n) {
     (pp = r[11]) &&
     (r[12] || r[147] & ((1 << 5) | (1 << 3)))
   ) {
+    // 0xA000-0xBFFF: カートリッジRAMへの書き込み
     if (r[147] & (1 << 4) && 0x08 <= pp && pp <= 0x0c) {
       p = 0;
     }
@@ -467,11 +516,13 @@ o.ff[801] = function (p, r, m, ff, n) {
     p |= (1 << 17) | (pp << 13);
   }
   if ((pp = r[76]) && 0xd000 <= p && p < 0xe000) {
+    // 0xD000-0xDFFF: WRAMへの書き込み (CGBバンク考慮)
     p &= (1 << 12) - 1;
     p |= pp;
   }
   m[p] = n;
 };
+// セーブデータ(RAM)をPNG画像のαチャンネルにエンコードして保存する
 o.ff[820] = function () {
   var c = document.querySelector('.svsv');
   if (!c) {
@@ -518,6 +569,7 @@ o.ff[820] = function () {
   ss.setItem('GBRE_SAVE_' + o.ff[831](o.m), s);
   o.fftt(s, 10);
 };
+// ローカルストレージからセーブデータを読み込む
 o.ff[821] = function (s) {
   if (!s) {
     var ss = localStorage;
@@ -528,6 +580,7 @@ o.ff[821] = function (s) {
   s = 'data:image/png;base64,' + s;
   ii.src = s;
 };
+// 読み込んだセーブデータ(PNG画像)をデコードしてメモリに書き戻す
 o.ff[822] = function (e) {
   var c = document.querySelector('.svsv');
   if (!c) {
@@ -564,6 +617,7 @@ o.ff[822] = function (e) {
     m[(1 << 17) | i] = mm[ii];
   }
 };
+// I/O: 0xFF00 (P1/JOYP) - ジョイパッド入力
 o.ff[0x00 | (1 << 9)] = function (p, r, m, ff, n) {
   n ^= ~0;
   n >>= 4;
@@ -582,6 +636,7 @@ o.ff[0x00 | (1 << 9)] = function (p, r, m, ff, n) {
   }
   m[p] = nn;
 };
+// I/O: 0xFF02 (SC) - シリアル通信制御
 o.ff[0x02 | (1 << 9)] = function (p, r, m, ff, n) {
   if (n & (1 << 7) && n & 1) {
     r[122] = 1 << 10;
@@ -602,9 +657,11 @@ o.ff[0x02 | (1 << 9)] = function (p, r, m, ff, n) {
     }
   }
 };
+// I/O: 0xFF04 (DIV) - ディバイダレジスタ (書き込むと0にリセットされる)
 o.ff[0x04 | (1 << 9)] = function (p, r, m, ff, n) {
   m[p] = 0;
 };
+// I/O: 0xFF07 (TAC) - タイマー制御
 o.ff[0x07 | (1 << 9)] = function (p, r, m, ff, n) {
   t = n;
   t &= (1 << 2) - 1;
@@ -615,15 +672,18 @@ o.ff[0x07 | (1 << 9)] = function (p, r, m, ff, n) {
   t = 1 << t;
   r[105] &= t - 1;
 };
+// I/O: 0xFF46 (DMA) - OAMへのDMA転送
 o.ff[0x46 | (1 << 9)] = function (p, r, m, ff, n) {
   m.set(new Uint8Array(m.buffer, (n <<= 8), (1 << 5) * 5), 0xfe00);
 };
+// I/O: 0xFF50 - DMG互換BIOSを無効化する
 o.ff[0x50 | (1 << 9)] = function (p, r, m, ff, n) {
   if (n > 0) {
     m.set(new Uint8Array(m.buffer, 1 << 20, 1 << 8));
     r[86] = r[7] === 0x11 && m[0x0143] & (1 << 7) ? 1 : 0;
   }
 };
+// エミュレータのメインループ
 o.ff[1000] = function () {
   var oo = o;
   var r = oo.r;
@@ -631,6 +691,7 @@ o.ff[1000] = function () {
   var ff = oo.ff;
   var h = oo.h;
   if (!r[88]) {
+    // 初回実行時にクロック周波数と実行間隔を初期化
     r[88] = 1 << 20;
     r[15] = r[16] = 1 << 4;
     r[19] = (r[88] * r[16]) / 1000;
@@ -638,6 +699,7 @@ o.ff[1000] = function () {
   var cc = r[19];
   var d = new Date() | 0;
   var dd = r[14];
+  // 実行速度の動的調整 (処理が速すぎれば間隔を長く、遅ければ短くする)
   if (d < dd) {
     ++r[15];
   } else if (d > dd && --r[15] < 1) {
@@ -645,11 +707,14 @@ o.ff[1000] = function () {
   }
   r[14] = d + r[16];
   if (r[19] > 1) {
+    // 次のフレームを予約
     setTimeout(ff[1000], r[15]);
   }
+  // --- 1フレーム分のCPUサイクルを実行 ---
   while (cc > 0) {
     var p = r[9];
     if (r[21]) {
+      // EI命令の遅延実行 (1命令後)
       if (r[21] === 1) {
         ++r[21];
       } else {
@@ -657,11 +722,14 @@ o.ff[1000] = function () {
         r[20] = (1 << 8) - 1;
       }
     }
+    // --- 割り込みチェック ---
     var ii = m[0xffff] & m[0xff0f];
     if (ii & r[20]) {
+      // 割り込みマスタフラグ(IME)が有効で、発生した割り込みが許可されている場合
       r[20] = 0;
       ff[801](--r[6], r, m, ff, (p >> 8) & ((1 << 8) - 1));
       ff[801](--r[6], r, m, ff, p & ((1 << 8) - 1));
+      // 割り込みの種類に応じてジャンプ先を設定
       if (ii & 1) {
         m[0xff0f] ^= 1;
         r[9] = p = 1 << 6;
@@ -680,28 +748,36 @@ o.ff[1000] = function () {
       } else {
       }
     }
+    // --- 命令のフェッチ、デコード、実行 ---
     var n = ff[800](p, r, m, ff);
     var hh = r[22];
     if (hh && !ii) {
+      // HALT状態 (割り込み待ち)
       c = 6;
     } else {
       if (hh && ii) {
+        // HALT中に割り込みが発生したらHALT解除
         hh = r[22] = 0;
       }
+      // 命令を実行し、消費サイクル数を取得
       var c = ff[n](n, r, m, ff);
       if (r[9] >> 16) {
         r[9] &= (1 << 16) - 1;
       }
     }
     if (c < 1) {
+      // 不正なサイクル数が返されたらループを抜ける (エラー)
       break;
     }
+    // --- 各種ハードウェアの更新 ---
     cc -= c;
     r[18] += c;
+    // DIVレジスタ (0xFF04) の更新
     if ((r[104] += c) >= 1 << 6) {
       r[104] -= 1 << 6;
       ++m[0xff04];
     }
+    // TIMAレジスタ (0xFF05, 0xFF06, 0xFF07) の更新
     var t = m[0xff07];
     if (t & (1 << 2)) {
       t &= (1 << 2) - 1;
@@ -725,14 +801,17 @@ o.ff[1000] = function () {
         }
       }
     }
+    // ジョイパッド割り込みの要求
     if (r[111] ^ r[112]) {
       r[112] = r[111];
       m[0xff0f] |= 1 << 4;
     }
+    // シリアル通信完了割り込みの要求
     if (r[122] > 0 && (r[122] -= c) <= 0) {
       m[0xff02] &= ~(1 << 7);
       m[0xff0f] |= 1 << 3;
     }
+    // APU (音声) の長さカウンタ更新
     var ll = m[0xff26];
     if (ll & (1 << 7) && ll & ((1 << 4) - 1)) {
       if (ll & 1 && (r[220] -= c) <= 0) {
@@ -748,6 +827,7 @@ o.ff[1000] = function () {
         ll = m[0xff26] ^= 1 << 3;
       }
     }
+    // APU (音声) のスイープ更新
     var ll = r[245];
     if (ll && (r[244] += c) >= ll) {
       r[244] -= ll;
@@ -765,12 +845,14 @@ o.ff[1000] = function () {
       r[232] = 0;
       ff[1201](2, r, m, ff);
     }
+    // --- PPU (描画) の更新 ---
     var v = m[0xff41];
     var mm = v & ((1 << 2) - 1);
     var y = m[0xff44];
     var x = (r[100] += c);
     if (m[0xff40] & (1 << 7)) {
       if (r[87]) {
+        // CGB倍速モード
         if (x >= 114 << 1) {
           r[100] = x -= 114 << 1;
           m[0xff44] = ++y;
@@ -790,6 +872,7 @@ o.ff[1000] = function () {
           }
           m[0xff41] = v;
           if (y < 144) {
+            // Mode 2 (OAM探索) or Mode 3 (描画)
             mm = 2;
             v &= ~((1 << 2) - 1);
             v |= mm;
@@ -798,6 +881,7 @@ o.ff[1000] = function () {
               m[0xff0f] |= 1 << 1;
             }
           } else if (y === 144) {
+            // Mode 1 (V-Blank)
             mm = 1;
             v &= ~((1 << 2) - 1);
             v |= mm;
@@ -811,6 +895,7 @@ o.ff[1000] = function () {
           }
         } else if (y >= 144) {
         } else if (x >= 63 << 1) {
+          // Mode 0 (H-Blank)
           if (mm !== 0) {
             mm = 0;
             v &= ~((1 << 2) - 1);
@@ -825,6 +910,7 @@ o.ff[1000] = function () {
             }
           }
         } else if (x >= 20 << 1) {
+          // Mode 3 (描画)
           if (mm !== 3) {
             mm = 3;
             v &= ~((1 << 2) - 1);
@@ -834,6 +920,7 @@ o.ff[1000] = function () {
           }
         }
       } else {
+        // 通常速度モード
         if (x >= 114) {
           r[100] = x -= 114;
           m[0xff44] = ++y;
@@ -902,12 +989,15 @@ o.ff[1000] = function () {
       m[0xff41] &= ~((1 << 2) - 1);
     }
   }
+  // デバッグ情報が表示されていれば更新
   if (r[33]) {
     ff[811](oo.ffrr(oo, r, m, ff), 0);
   }
   ff[812]();
 };
+// ページの読み込みが完了したときに実行されるメインの初期化処理
 onload = function () {
+  // キーボードイベントのハンドラを設定
   document.onkeyup = document.onkeydown = o.ff[997];
   var d = document.createElement('div');
   d.className = 'd';
@@ -916,12 +1006,14 @@ onload = function () {
   c.width = 1 << 8;
   c.height = 1;
   d.appendChild(c);
+  // メインの描画領域となるCanvasを作成
   var c = document.createElement('canvas');
   c.className = 'gbgb';
   c.onclick = c.ontouchstart = o.ff[999];
   c.width = (1 << 3) * 20;
   c.height = (1 << 3) * 18;
   d.appendChild(c);
+  // 十字キーとA/Bボタンの仮想コントローラを作成
   var c = document.createElement('canvas');
   c.className = 'drdr';
   c.height = c.width = 60;
@@ -933,6 +1025,7 @@ onload = function () {
   o.ff[996](c);
   d.appendChild(c);
   document.body.appendChild(d);
+  // 各種操作ボタンを作成
   var a = [
     'Reset',
     'Open URL',
@@ -967,6 +1060,7 @@ onload = function () {
   b.onchange = o.ff[846];
   d.appendChild(b);
   document.body.appendChild(d);
+  // デバッグ表示用のテキストエリアを作成
   var d = document.createElement('div');
   for (var i = 0; i < 11; ++i) {
     var t = document.createElement('textarea');
@@ -974,14 +1068,17 @@ onload = function () {
   }
   document.body.appendChild(d);
   o.ff[832]();
+  // URLのハッシュからROMのURLを読み込んで起動
   var u = location.hash;
   if (u.length > 1) {
     u = decodeURIComponent(u.substr(1));
     o.ff[844](u);
   }
+  // 開始メッセージを表示
   o.fftt('Touch the screen...');
 };
 
+// 仮想コントローラの描画とイベント設定
 o.ff[996] = function (c) {
   var cc = (c.cc = c.getContext('2d'));
   var d = (cc.d = 3);
@@ -999,6 +1096,7 @@ o.ff[996] = function (c) {
     c.ontouchstart =
       o.ff[998];
 };
+// 仮想コントローラのタッチ/クリックイベント処理
 o.ff[998] = function (e) {
   e.preventDefault();
   var c = e.target;
@@ -1098,6 +1196,7 @@ o.ff[997] = function (e) {
     r[111] &= ~b;
   }
 };
+// DMG互換BIOS(ブートストラップROM)をメモリに書き込む
 o.ff[832] = function () {
   var s =
     '31feff af 21ff9f 32 cb7c 20fb 3e80 e026 3eff e025 3e77 e024 3e80 e011 3ef3 e012 3e10 210699 22 3c fe18 2003 212699 fe20 20f3 000000000000000000000000 1820 7ce2e2e0 fce2e2fc fce2e2fc fee0e0fc eee2e27c e2e2e2fc e8e8e4e2 e0e0e0fe 114000 210081 1a 47 af cb30 cb40 2802 f603 cb48 2802 f60c cb50 2802 f630 cb58 2802 f6c0 22 23 77 cb65 2009 2d 2d cb35 2c cb35 18d5 1c cb6b 2012 cb35 2d cb35 2c 2c cb65 2805 cb35 2c cb35 18bc 3efc e047 3e64 e042 3e91 e040 0618 f044 fe90 20fa 05 20f7 f042 fe03 2008 2113ff 3683 2c 3687 3d e042 20e2 2d 36c1 2c 3687 06ff f044 fe90 20fa 05 20f7 210001 af b6 2c 20fc a7 28fe 000000000000000000000000 3e11 e050';
@@ -1114,6 +1213,7 @@ o.ff[832] = function () {
     }
   }
 };
+// カートリッジヘッダ(0x0147-0x0149)を読み取り、MBCタイプやROM/RAMサイズを特定する
 o.ff[833] = function (r, m, ff) {
   var ss = m[0x0147];
   r[147] = 0;
@@ -1165,6 +1265,7 @@ o.ff[833] = function (r, m, ff) {
   r[149] = ss;
   ff[811]([o.h[r[147]], o.h[r[148]], o.h[r[149]], r[18]].join(' '), 4);
 };
+// カートリッジヘッダからROMタイトルを読み出す
 o.ff[831] = function (m) {
   var t = '';
   for (var i = 0x0134; i <= 0x0142; ++i) {
@@ -1176,6 +1277,7 @@ o.ff[831] = function (m) {
   }
   return t;
 };
+// ROM情報を整形して文字列として返す
 o.ff[834] = function () {
   var oo = o;
   var r = oo.r;
@@ -1190,6 +1292,7 @@ o.ff[834] = function () {
   a[(i += 2)] = r[149];
   return a.join('');
 };
+// URLからROMファイルを非同期で読み込む
 o.ff[844] = function (u) {
   var x = new XMLHttpRequest();
   x.open('GET', u);
@@ -1199,6 +1302,7 @@ o.ff[844] = function (u) {
   x.send();
   x.u = u;
 };
+// 読み込んだROMファイル(ArrayBuffer)を処理し、メモリに展開する
 o.ff[845] = function (e) {
   var x = e.target;
   if (x.result) {
@@ -1248,6 +1352,7 @@ o.ff[845] = function (e) {
   }
   o.fftt([x.status, x.response, x.response.byteLength].join(' '), 1);
 };
+// ローカルファイル選択(<input type="file">)のハンドラ
 o.ff[846] = function (e) {
   var f = e.target.files;
   for (var i = 0; i < f.length; ++i) {
@@ -1256,6 +1361,7 @@ o.ff[846] = function (e) {
     fff.readAsArrayBuffer(f[i]);
   }
 };
+// 2P通信用のiframeが読み込まれた際のハンドラ
 o.ff[847] = function (e) {
   var oo = e.target.contentWindow.o;
   o.ll = {};
