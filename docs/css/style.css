@@ -1,0 +1,93 @@
+* {
+  font-family: Trebuchet MS;
+  font-size: 24;
+}
+body {
+  background: black;
+  margin: 0;
+  width: 1024;
+}
+.ffff {
+  width: 1024;
+  height: 666;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+iframe {
+  border: 0;
+}
+.d {
+  position: relative;
+  width: 1024;
+  height: 1024;
+}
+.d canvas {
+  position: absolute;
+  background: white;
+}
+textarea {
+  background: silver;
+  width: 100%;
+  height: 122;
+}
+textarea:last-of-type {
+  width: 100%;
+  height: 77777;
+}
+.svsv,
+textarea {
+  display: none;
+}
+textarea:first-of-type,
+textarea:last-of-type {
+  display: inline-block;
+}
+
+/* style 2 - .css class */
+.d {
+  height: 555;
+}
+.gbgb {
+  left: 212;
+  top: 0;
+  width: 600;
+  height: 540;
+}
+.drdr,
+.abab {
+  left: 0;
+  top: 300;
+  width: 210;
+  height: 210;
+}
+.abab {
+  left: 814;
+}
+button {
+  min-width: 10%;
+  font-size: 24;
+}
+
+/* style 3 - .css class */
+/*
+.d{height:555;}
+.gbgb{left:212;top:0;width:600;height:540;}
+.drdr,.abab{left:0;top:90;width:450;height:450;opacity:.1;}.abab{left:574;}
+button{min-width:10%;font-size:32;}
+*/
+
+/* style 4 - .css class */
+/*
+.d{height:1333;}
+.gbgb{left:112;top:0;width:800;height:720;}
+.drdr,.abab{left:0;top:720;width:510;height:510;}.abab{left:514;}
+button{min-width:10%;font-size:44;}
+*/
+
+/* style 5 - .css class */
+/*
+.d{height:555;}
+.gbgb{left:262;top:48;width:500;height:450;}
+.drdr,.abab{left:0;top:240;width:258;height:258;opacity:1;}.abab{left:766;}
+button{min-width:10%;font-size:24;}
+*/
