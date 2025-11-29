@@ -1,5 +1,3 @@
-console.log('hoge');
-
 o = {};
 o.ff = new Array(1 << 11);
 o.ff[888] = o;
