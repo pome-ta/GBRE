@@ -5,7 +5,7 @@
 ## 1. JavaScript
 
 - **言語**: JavaScript (ES6)
-- **スタイルガイド**: Prettierに準拠
+- **スタイルガイド**: Prettier に準拠
 - **文字コード**: UTF-8
 - **改行コード**: LF
 
